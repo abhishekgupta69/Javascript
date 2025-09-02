@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Tracker App</title>
+  <style>
+    /* ===== Basic Reset ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #74ebd5 0%, #9face6 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+      color: #fff;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+    }
+
+    /* ===== Card Style ===== */
+    .card {
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 650px;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* ===== Summary Section ===== */
+    .summary {
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+    }
+
+    .summary div h3 {
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    .income { color: #2ecc71; font-weight: bold; }
+    .expense { color: #e74c3c; font-weight: bold; }
+    .balance { color: #2980b9; font-weight: bold; }
+
+    /* ===== Form Section ===== */
+    form {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    form input, form select, form button {
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    form input:focus, form select:focus {
+      border-color: #6c63ff;
+      box-shadow: 0 0 5px rgba(108,99,255,0.3);
+    }
+
+    form button {
+      background: #6c63ff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 1px;
+      transition: background 0.3s;
+    }
+
+    form button:hover {
+      background: #5548c8;
+    }
+
+    /* ===== Transaction List ===== */
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      background: #f9f9f9;
+      border-left: 5px solid;
+      transition: 0.2s;
+    }
+
+    li.income-item {
+      border-color: #2ecc71;
+    }
+
+    li.expense-item {
+      border-color: #e74c3c;
+    }
+
+    li:hover {
+      background: #f1f1f1;
+    }
+
+    .delete-btn {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .delete-btn:hover {
+      background: #c0392b;
+    }
+  </style>
+</head>
+<body>
+  <h1>Budget Tracker</h1>
+
+  <!-- Summary Section -->
+  <div class="card summary">
+    <div>
+      <h3>Total Income</h3>
+      <p class="income" id="totalIncome">₹0</p>
+    </div>
+    <div>
+      <h3>Total Expenses</h3>
+      <p class="expense" id="totalExpense">₹0</p>
+    </div>
+    <div>
+      <h3>Balance</h3>
+      <p class="balance" id="balance">₹0</p>
+    </div>
+  </div>
+
+  <!-- Form Section -->
+  <div class="card">
+    <form id="transactionForm">
+      <input type="text" id="description" placeholder="Description" required>
+      <input type="number" id="amount" placeholder="Amount" required>
+      <select id="type" required>
+        <option value="income">Income</option>
+        <option value="expense">Expense</option>
+      </select>
+      <input type="date" id="date" required>
+      <button type="submit">Add</button>
+    </form>
+  </div>
+
+  <!-- Transaction List -->
+  <div class="card">
+    <h3 style="margin-bottom:10px; color:#555;">Transactions</h3>
+    <ul id="transactionList"></ul>
+  </div>
+
+  <script>
+    let transactions = [];
+
+    const form = document.getElementById('transactionForm');
+    const descriptionInput = document.getElementById('description');
+    const amountInput = document.getElementById('amount');
+    const typeInput = document.getElementById('type');
+    const dateInput = document.getElementById('date');
+    const transactionList = document.getElementById('transactionList');
+    const totalIncomeEl = document.getElementById('totalIncome');
+    const totalExpenseEl = document.getElementById('totalExpense');
+    const balanceEl = document.getElementById('balance');
+
+    function updateSummary() {
+      let income = 0, expense = 0;
+      transactions.forEach(t => {
+        if (t.type === 'income') income += t.amount;
+        else expense += t.amount;
+      });
+      totalIncomeEl.innerText = `₹${income}`;
+      totalExpenseEl.innerText = `₹${expense}`;
+      balanceEl.innerText = `₹${income - expense}`;
+    }
+
+    function renderTransactions() {
+      transactionList.innerHTML = '';
+      transactions.forEach((t, index) => {
+        const li = document.createElement('li');
+        li.classList.add(t.type === 'income' ? 'income-item' : 'expense-item');
+        li.innerHTML = `
+          <span>${t.date} - ${t.description} : <strong>₹${t.amount}</strong></span>
+          <button class="delete-btn" onclick="deleteTransaction(${index})">Delete</button>
+        `;
+        transactionList.appendChild(li);
+      });
+    }
+
+    function deleteTransaction(index) {
+      transactions.splice(index, 1);
+      renderTransactions();
+      updateSummary();
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const transaction = {
+        description: descriptionInput.value,
+        amount: parseFloat(amountInput.value),
+        type: typeInput.value,
+        date: dateInput.value
+      };
+      transactions.push(transaction);
+      renderTransactions();
+      updateSummary();
+      form.reset();
+    });
+  </script>
+</body>
+</html>
